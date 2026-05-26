@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Exo+2:ital,wght@0,100..900;1,100..900&family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@1,6..72,400;1,6..72,600&family=Playfair+Display:ital,wght@1,600&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Plus+Jakarta+Sans:wght@500;600;700&family=Sora:wght@400;600&display=swap');
+
+@theme {
+  --color-obsidian-bg: #050505;
+  --color-obsidian-card: #0D0D11;
+  --color-obsidian-cardHover: #13131A;
+  --color-obsidian-border: rgba(255, 255, 255, 0.07);
+  --color-obsidian-accent: #E2C29B;
+  --color-obsidian-accentHover: #EAD3B8;
+  --color-obsidian-accentMuted: rgba(226, 194, 155, 0.1);
+  --color-obsidian-muted: #B0B0C3;
+  --color-obsidian-ai: #6366F1;
+  --color-obsidian-aiMuted: rgba(99, 102, 241, 0.15);
+  --color-obsidian-aiGlow: rgba(99, 102, 241, 0.06);
+  --color-obsidian-success: #10B981;
+
+  --font-sans: "Inter", sans-serif;
+  --font-heading: "Exo 2", "Syne", sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+
+  --animate-pulse-slow: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@layer base {
+  body {
+    @apply bg-obsidian-bg text-white font-sans antialiased overflow-x-hidden selection:bg-obsidian-accent/30 selection:text-white;
+    background-color: #050505;
+  }
+}
+
+/* Custom Scrollbar for elegant restraint & visibility */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050505;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2A2A38;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3F3F54;
+}
+
+/* Custom utilities for premium aesthetics */
+.text-glow {
+  text-shadow: 0 0 12px rgba(226, 194, 155, 0.25);
+}
+
+.text-glow-ai {
+  text-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+}
+
+.border-glow-ai {
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.08), inset 0 0 10px rgba(99, 102, 241, 0.03);
+}
+
+.accent-glow-card {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 40px rgba(226, 194, 155, 0.02);
+}
+
+.glass-panel {
+  @apply bg-obsidian-card border border-obsidian-border backdrop-blur-xl;
+}
+
+/* Grain Overlay Layer */
+.grain-noise-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  content: "";
+  opacity: 0.025;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Smooth layout height fix */
+html, body, #root {
+  height: 100%;
+}
+
+/* Standard utilities for premium interactive cards */
+.interactive-scale {
+  @apply transition-all duration-300 active:scale-[0.97];
+}
