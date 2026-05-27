@@ -18,45 +18,77 @@ export default function ProductSections({ onFocusWorkspace }) {
           SECTION 1: THE ORIGIN STORY — "Why I built this"
           Personal, emotional, authentic. NOT marketing copy.
       ═══════════════════════════════════════════════════════════════ */}
-      <section id="story" className="py-12 md:py-16 border-t border-white/5 scroll-mt-20">
-        <div className="max-w-2xl mx-auto flex flex-col gap-5">
+      <section id="story" className="py-16 md:py-20 border-t border-white/5 scroll-mt-20">
+        <div className="max-w-5xl mx-auto flex flex-col gap-8 md:gap-10">
 
+          {/* Inspirational Headline at the Top */}
           <motion.div
             initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-60px" }}
             variants={fadeUp}
-            className="flex flex-col gap-2"
+            className="flex flex-col gap-2 text-center max-w-3xl mx-auto"
           >
-            <span className="font-mono text-[10px] tracking-[0.2em] text-obsidian-accent uppercase font-bold">
-              The backstory
+            <span className="font-mono text-[10px] tracking-[0.25em] text-obsidian-accent uppercase font-extrabold">
+              The Backstory
             </span>
-            <h2 className="font-heading font-extrabold text-2xl md:text-3xl lg:text-4xl text-white tracking-tight leading-tight">
-              I built this because I was frustrated.
+            <h2 className="font-heading font-extrabold text-3xl md:text-4xl lg:text-5xl text-white tracking-tight leading-[1.12]">
+              I’m an engineer.<br />
+              <span className="bg-gradient-to-r from-[#E2C29B] to-[#C49B74] bg-clip-text text-transparent">And engineers are built to solve problems.</span>
             </h2>
           </motion.div>
 
+          {/* Inspirational Paragraphs below in global width */}
           <motion.div
             initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-40px" }}
-            className="flex flex-col gap-6 text-sm md:text-[15px] text-[#A0A0B8] font-sans leading-[1.85]"
+            className="flex flex-col gap-6 text-sm md:text-base text-[#A0A0B8] font-sans leading-[1.85] max-w-4xl mx-auto text-left md:text-center"
           >
             <motion.p variants={fadeUp} custom={0}>
-              I kept running into the same wall. I'd have a thought — not a hot take, not a meme — just something honest I wanted to share. A lesson I learned the hard way. A perspective that needed more than a sentence. Something that deserved breathing room.
+              While trying to share deeper thoughts on X, I kept running into the same limitation over and over again: <span className="text-obsidian-accent font-bold">280 characters.</span>
             </motion.p>
 
-            <motion.p variants={fadeUp} custom={1}>
-              But X gave me 280 characters. So I'd start cutting words, simplifying ideas, losing nuance. By the time it fit, the meaning was gone. The thing I originally wanted to say? Buried under compromises.
+            <motion.p variants={fadeUp} custom={1} className="text-white/90 font-medium text-[15px] md:text-lg italic tracking-wide">
+              Some ideas are <span className="text-obsidian-accent font-bold">too meaningful</span> to be compressed into a few lines. Some stories need space. Some thoughts deserve better presentation.
             </motion.p>
 
             <motion.p variants={fadeUp} custom={2}>
-              I tried threads — but threads feel scattered. I tried screenshots of Notes app — but they look terrible and nobody trusts them. I tried Canva, Figma, even manual CSS — but spending 20 minutes designing a card for one post felt absurd.
+              I tried screenshots. I tried notes apps. I tried manually designing posts. But everything felt <span className="text-obsidian-accent font-bold">slow, messy, and disconnected</span> from the way modern creators actually think and write.
             </motion.p>
 
-            <motion.p variants={fadeUp} custom={3}>
-              I just wanted to <span className="text-white font-medium">write my thought, pick a vibe, and get a beautiful image</span> — in under a minute. Something that looked like I spent hours on it, even though I didn't. Something that stopped the scroll because the typography was genuinely good, not because it was loud or clickbaity.
+            <motion.p variants={fadeUp} custom={3} className="text-white font-extrabold text-xl md:text-2xl py-2 tracking-tight">
+              So I built <span className="bg-gradient-to-r from-[#E2C29B] to-[#C49B74] bg-clip-text text-transparent">Beyond280</span>.
             </motion.p>
 
-            <motion.p variants={fadeUp} custom={4} className="text-white/80">
-              So I built Beyond280. Not for startups. Not for agencies. For anyone who's ever typed a thought, hit the character limit, and thought — <em className="text-obsidian-accent font-medium not-italic">"this deserves better."</em>
+            <motion.p variants={fadeUp} custom={4}>
+              A creator-focused tool designed to <span className="text-obsidian-accent font-bold">turn long-form thoughts into beautiful, shareable visual posts</span> — powered by AI, optimized for clarity, and built for modern internet creators.
             </motion.p>
+
+            <motion.p variants={fadeUp} custom={5}>
+              Beyond280 isn’t just about bypassing a character limit. It’s about giving creators the <span className="text-[#E2C29B] font-bold">freedom to express ideas</span> without compromising depth, design, or creativity.
+            </motion.p>
+
+            {/* Creator Signature Block Immediately After Story */}
+            <motion.div 
+              variants={fadeUp} 
+              custom={6}
+              className="mt-8 pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 text-left w-full"
+            >
+              <div className="flex flex-col gap-1.5 max-w-md">
+                <p className="text-[13px] sm:text-sm text-obsidian-muted leading-relaxed font-sans italic">
+                  "Built by a creator who simply wanted to share more. If Beyond280 helped you share something meaningful, that's all I wanted."
+                </p>
+              </div>
+              <a
+                href="https://x.com/priyeshAI"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Follow the creator @priyeshAI on X"
+                className="interactive-scale flex items-center gap-2.5 h-10 px-5 bg-[#0C0C10] border border-[#E2C29B]/20 hover:border-[#E2C29B] bg-gradient-to-r from-obsidian-accentMuted to-white/[0.02] hover:brightness-110 text-obsidian-accent hover:text-white font-sans font-extrabold text-[10.5px] uppercase tracking-wider rounded-lg shadow-md shadow-[#E2C29B]/5 transition-all duration-300 shrink-0"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                </svg>
+                <span>Follow @priyeshAI</span>
+              </a>
+            </motion.div>
           </motion.div>
 
         </div>
@@ -150,7 +182,7 @@ export default function ProductSections({ onFocusWorkspace }) {
               {
                 step: '01',
                 title: 'Dump your thoughts',
-                body: "Write whatever's on your mind. Don't worry about length, structure, or grammar. Just get it out. The editor is your thinking space."
+                body: "Write whatever's on your mind. Don't worry about length, structure, or robotic phrasing. Just get it out. The editor is your thinking space."
               },
               {
                 step: '02',
@@ -167,7 +199,7 @@ export default function ProductSections({ onFocusWorkspace }) {
                 key={item.step}
                 variants={fadeUp}
                 custom={i}
-                className="flex flex-col gap-3 p-5 rounded-xl border border-white/5 bg-[#0A0A0E]/60 hover:border-white/10 transition-all duration-300"
+                className="flex flex-col gap-3 p-5 rounded-xl border border-white/5 bg-[#0A0A0E]/60 hover:border-[#E2C29B]/35 hover:-translate-y-1.5 hover:shadow-[0_12px_40px_rgba(226,194,155,0.03)] transition-all duration-500 ease-out transform cursor-default"
               >
                 <span className="font-mono text-[10px] text-obsidian-accent font-bold tracking-wider">{item.step}</span>
                 <h3 className="text-white font-bold text-sm">{item.title}</h3>
@@ -216,7 +248,7 @@ export default function ProductSections({ onFocusWorkspace }) {
               },
               {
                 label: 'Creator intent preserved',
-                detail: "AI grammar tools fix your mistakes without changing your voice. Your words, your style — just polished."
+                detail: "AI humanizer tools remove artificial robotic tones without changing your core message. Your words, your style — just more natural."
               },
               {
                 label: 'No accounts, no data',
@@ -227,7 +259,7 @@ export default function ProductSections({ onFocusWorkspace }) {
                 key={item.label}
                 variants={fadeUp}
                 custom={i}
-                className="p-5 rounded-xl border border-white/5 bg-[#0A0A0E]/60 hover:border-white/10 transition-all duration-300 flex flex-col gap-2"
+                className="p-5 rounded-xl border border-white/5 bg-[#0A0A0E]/60 hover:border-[#E2C29B]/35 hover:-translate-y-1.5 hover:shadow-[0_12px_40px_rgba(226,194,155,0.03)] transition-all duration-500 ease-out transform flex flex-col gap-2 cursor-default"
               >
                 <h4 className="text-white text-xs font-bold">{item.label}</h4>
                 <p className="text-[11px] text-[#A0A0B8] font-sans leading-relaxed">{item.detail}</p>
@@ -265,7 +297,11 @@ export default function ProductSections({ onFocusWorkspace }) {
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
           >
             {/* Obsidian */}
-            <motion.div variants={fadeUp} custom={0} className="p-6 rounded-xl border border-white/5 bg-[#0D0D11] hover:border-[#E2C29B]/30 transition-all duration-300 flex flex-col justify-between aspect-[4/3] group">
+            <motion.div 
+              variants={fadeUp} 
+              custom={0} 
+              className="p-5 sm:p-6 rounded-xl border border-white/5 bg-[#0D0D11] hover:border-[#E2C29B]/50 hover:-translate-y-1.5 hover:shadow-[0_15px_40px_rgba(226,194,155,0.06)] transition-all duration-500 ease-out transform flex flex-col justify-between h-auto sm:aspect-[4/3] group cursor-default"
+            >
               <span className="font-mono text-[9px] text-[#E2C29B] tracking-wider uppercase font-bold">Obsidian</span>
               <div className="my-2">
                 <h4 className="font-heading font-extrabold text-white text-sm mb-1">Bold & authoritative</h4>
@@ -277,7 +313,11 @@ export default function ProductSections({ onFocusWorkspace }) {
             </motion.div>
 
             {/* Ethereal */}
-            <motion.div variants={fadeUp} custom={1} className="p-6 rounded-xl border border-white/5 bg-[#F1F5F9] hover:border-[#CBD5E1]/50 transition-all duration-300 flex flex-col justify-between aspect-[4/3] group">
+            <motion.div 
+              variants={fadeUp} 
+              custom={1} 
+              className="p-5 sm:p-6 rounded-xl border border-[#CBD5E1]/40 bg-[#F1F5F9] hover:border-[#0F172A]/40 hover:-translate-y-1.5 hover:shadow-[0_15px_40px_rgba(15,23,42,0.06)] transition-all duration-500 ease-out transform flex flex-col justify-between h-auto sm:aspect-[4/3] group cursor-default"
+            >
               <span className="font-mono text-[9px] text-[#64748B] tracking-wider uppercase font-bold">Ethereal</span>
               <div className="my-2">
                 <h4 className="font-serif italic font-semibold text-[#0F172A] text-sm mb-1">Clean & thoughtful</h4>
@@ -289,19 +329,27 @@ export default function ProductSections({ onFocusWorkspace }) {
             </motion.div>
 
             {/* Parchment */}
-            <motion.div variants={fadeUp} custom={2} className="p-6 rounded-xl border border-white/5 bg-[#FAF6F0] hover:border-[#D4CBBF]/50 transition-all duration-300 flex flex-col justify-between aspect-[4/3] group">
-              <span className="font-mono text-[9px] text-[#8A7B76] tracking-wider uppercase font-bold">Parchment</span>
+            <motion.div 
+              variants={fadeUp} 
+              custom={2} 
+              className="p-5 sm:p-6 rounded-xl border border-[#D1C2A5]/40 bg-[#F3EAD3] hover:border-[#3E2511]/40 hover:-translate-y-1.5 hover:shadow-[0_15px_40px_rgba(62,37,17,0.08)] transition-all duration-500 ease-out transform flex flex-col justify-between h-auto sm:aspect-[4/3] group cursor-default"
+            >
+              <span className="font-mono text-[9px] text-[#85705B] tracking-wider uppercase font-bold">Parchment</span>
               <div className="my-2">
-                <h4 className="font-serif italic font-semibold text-[#3A2E2B] text-sm mb-1">Warm & personal</h4>
-                <p className="text-[11px] text-[#4A3E3B] font-sans leading-relaxed">
-                  Feels like a handwritten note. Cozy, intimate, human.
+                <h4 className="font-serif italic font-bold text-[#3E2511] text-sm mb-1">Warm & literary sepia</h4>
+                <p className="text-[11px] text-[#4F3620] font-sans leading-relaxed">
+                  Feels like a classic printed sheet of paper. Cozy, intimate, human.
                 </p>
               </div>
-              <div className="w-8 h-0.5 bg-[#3A2E2B] rounded"></div>
+              <div className="w-8 h-0.5 bg-[#3E2511] rounded"></div>
             </motion.div>
 
             {/* Clay */}
-            <motion.div variants={fadeUp} custom={3} className="p-6 rounded-xl border border-white/5 bg-[#E2725B] hover:border-white/20 transition-all duration-300 flex flex-col justify-between aspect-[4/3] group">
+            <motion.div 
+              variants={fadeUp} 
+              custom={3} 
+              className="p-5 sm:p-6 rounded-xl border border-[#FFFDD0]/15 bg-[#E2725B] hover:border-[#FFFDD0]/55 hover:-translate-y-1.5 hover:shadow-[0_15px_40px_rgba(255,253,208,0.06)] transition-all duration-500 ease-out transform flex flex-col justify-between h-auto sm:aspect-[4/3] group cursor-default"
+            >
               <span className="font-mono text-[9px] text-[#FFFDD0] tracking-wider uppercase font-bold">Clay</span>
               <div className="my-2">
                 <h4 className="font-serif italic font-semibold text-[#FFFDD0] text-sm mb-1">Earthy & grounded</h4>
@@ -340,54 +388,12 @@ export default function ProductSections({ onFocusWorkspace }) {
             initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.2 }}
             onClick={onFocusWorkspace}
-            className="interactive-scale px-7 py-3.5 bg-gradient-to-r from-[#E2C29B] to-[#C49B74] hover:brightness-110 text-obsidian-bg font-sans font-extrabold text-sm rounded-full shadow-lg shadow-obsidian-accentMuted transition-all duration-300 active:scale-[0.97]"
+            aria-label="Navigate to writing studio"
+            className="interactive-scale px-7 py-3.5 bg-gradient-to-r from-[#E2C29B] to-[#C49B74] hover:brightness-110 text-obsidian-bg font-sans font-extrabold text-sm rounded-full shadow-lg shadow-obsidian-accentMuted transition-all duration-300 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-obsidian-accent/70 cursor-pointer"
           >
             Open the Studio
           </motion.button>
         </div>
-      </section>
-
-
-      {/* ═══════════════════════════════════════════════════════════════
-          SECTION 7: CREATOR NOTE + FOLLOW
-          Personal, warm, not self-promotional
-      ═══════════════════════════════════════════════════════════════ */}
-      <section className="py-10 md:py-14 border-t border-white/5">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }} transition={{ duration: 0.6 }}
-          className="max-w-md mx-auto flex flex-col items-center text-center gap-5"
-        >
-          {/* Small branded icon */}
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-obsidian-accent/20 to-[#C49B74]/10 border border-[#E2C29B]/20 flex items-center justify-center">
-            <FeatherLogo className="w-4.5 h-4.5 text-obsidian-accent" />
-          </div>
-
-          <p className="text-sm text-[#A0A0B8] font-sans leading-relaxed">
-            Built by <span className="text-white font-medium">a creator who needed this tool</span> and couldn't find it anywhere. If Beyond280 helped you share something meaningful, that's all I wanted.
-          </p>
-
-          {/* Follow CTA */}
-          <a
-            href="https://x.com/priyeshkumar04"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex items-center gap-3 px-5 py-2.5 rounded-full border border-white/10 hover:border-obsidian-accent/30 bg-[#0A0A0E]/80 transition-all duration-300"
-          >
-            {/* X/Twitter icon */}
-            <svg className="w-3.5 h-3.5 text-[#A0A0B8] group-hover:text-obsidian-accent transition-colors duration-200" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-            </svg>
-            <span className="text-xs text-[#A0A0B8] group-hover:text-white font-medium transition-colors duration-200">
-              Follow @priyeshkumar04
-            </span>
-          </a>
-
-          <p className="text-[10px] text-white/25 font-mono uppercase tracking-widest mt-2">
-            Built by a creator, for creators.
-          </p>
-
-        </motion.div>
       </section>
 
     </div>

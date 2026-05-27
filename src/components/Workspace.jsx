@@ -5,7 +5,7 @@ import {
   AlignLeftIcon, AlignCenterIcon, TextSizeIcon, WandIcon, 
   RotateCcwIcon, ToggleIcon, CheckCircleIcon, ChevronDownIcon 
 } from './Icons';
-import { fixGrammar, parseStreamText } from '../services/ai';
+import { humanizeText, parseStreamText } from '../services/ai';
 import { toPng } from 'html-to-image';
 
 // Stylized theme configurations (Obsidian Vault Archetype)
@@ -38,17 +38,17 @@ const PRESETS = {
     usernameColor: 'text-white'
   },
   parchment: {
-    name: 'Parchment Oat',
-    cardBg: 'bg-[#FAF6F0]', // Cozy warm creamy parchment background
-    border: 'border border-[#D4CBBF]/80', // Warm sand frame
-    titleColor: 'text-[#3A2E2B] font-semibold', // Warm mahogany title
-    bodyColor: 'text-[#4A3E3B]', // Warm espresso chocolate body copy
-    badgeBg: 'bg-[#3A2E2B]/10',
-    badgeText: 'text-[#3A2E2B]',
-    metaColor: 'text-[#8A7B76]',
-    avatarBg: 'bg-[#3A2E2B]',
-    avatarText: 'text-[#FAF6F0]',
-    usernameColor: 'text-[#3A2E2B]'
+    name: 'Parchment Sepia',
+    cardBg: 'bg-[#F3EAD3]', // Rich warm vintage sepia literary paper background
+    border: 'border border-[#D1C2A5] shadow-[0_4px_22px_rgba(180,165,135,0.25)]', // Warm sand frame with soft sepia shadow
+    titleColor: 'text-[#3E2511] font-bold', // High-contrast deep literary mahogany title
+    bodyColor: 'text-[#4F3620]', // Highly readable rich warm walnut espresso body copy
+    badgeBg: 'bg-[#3E2511]/10',
+    badgeText: 'text-[#3E2511]',
+    metaColor: 'text-[#85705B]', // Readable vintage sand-brown meta text
+    avatarBg: 'bg-[#3E2511]',
+    avatarText: 'text-[#F3EAD3]',
+    usernameColor: 'text-[#3E2511]'
   },
   clay: {
     name: 'Organic Clay',
@@ -68,11 +68,13 @@ const PRESETS = {
 // Premium typography collections supported on the image canvas
 const FONTS = {
   sans: { name: 'Inter (Sans)', family: 'font-sans' },
-  exo2: { name: 'Exo 2 (Tech)', family: 'font-heading' },
-  mono: { name: 'JetBrains (Mono)', family: 'font-mono' },
-  serif: { name: 'Fraunces (Serif)', family: 'font-serif' },
-  newsreader: { name: 'Newsreader (Italic)', family: 'font-serif italic' },
-  playfair: { name: 'Playfair (Classic)', family: 'font-serif italic font-semibold' }
+  outfit: { name: 'Outfit (Modern)', family: 'font-outfit' },
+  jakarta: { name: 'Jakarta (Sleek)', family: 'font-jakarta' },
+  sora: { name: 'Sora (Slab)', family: 'font-sora' },
+  serif: { name: 'Fraunces (Editorial)', family: 'font-serif' },
+  newsreader: { name: 'Newsreader (Italic)', family: 'font-newsreader italic' },
+  playfair: { name: 'Playfair (Classic)', family: 'font-playfair italic font-semibold' },
+  mono: { name: 'JetBrains (Mono)', family: 'font-mono' }
 };
 
 const DEFAULT_TEXT = "Social content on X shouldn't be constrained by a simple character count. When you have deep, insights, condensing them into a raw tweet strips away their true authority.\n\nBeyond280 fixes this by instantly formatting, polishing, and packing your long thoughts into ultra-premium typographic cards that command visual space. Action breeds clarity.";
@@ -89,7 +91,8 @@ export default function Workspace() {
   
   const [align, setAlign] = useState('left');
   const [fontSize, setFontSize] = useState('medium');
-  const [grammarFix, setGrammarFix] = useState(false);
+  const [originalDraftText, setOriginalDraftText] = useState("");
+  const [isReviewingHumanize, setIsReviewingHumanize] = useState(false);
   
   // AI state controls
   const [isOptimizing, setIsOptimizing] = useState(false);
@@ -99,18 +102,19 @@ export default function Workspace() {
   const [isStreaming, setIsStreaming] = useState(false);
   
   // Premium AI Engine Controls
-  const [aiMode, setAiMode] = useState(null); // 'grammar'
+  const [aiMode, setAiMode] = useState(null); // 'grammar' or 'humanize'
   const [errorMsg, setErrorMsg] = useState(null);
   const [isAiApplied, setIsAiApplied] = useState(false);
   
-  // Telemetry estimations
-  const [readingTime, setReadingTime] = useState("12s read");
-  const [readability, setReadability] = useState("Clear & Engaging");
-  const [engagement, setEngagement] = useState("+42%");
-  
   // Toast and Export triggers
   const [isExporting, setIsExporting] = useState(false);
-  const [exportSuccess, setExportSuccess] = useState(false);
+  const [toastConfig, setToastConfig] = useState({ show: false, title: "", subtitle: "" });
+
+  // Dynamic notification toast helper
+  const triggerToast = (title, subtitle) => {
+    setToastConfig({ show: true, title, subtitle });
+    setTimeout(() => setToastConfig({ show: false, title: "", subtitle: "" }), 3500);
+  };
   
   const canvasRef = useRef(null);
   const fontDropdownRef = useRef(null);
@@ -126,34 +130,23 @@ export default function Workspace() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Sync editor fields with live preview card in real-time (only when AI is not applied to preview)
-  useEffect(() => {
-    if (!isStreaming) {
-      const words = text.trim().split(/\s+/).filter(Boolean).length;
-      const calcSec = Math.ceil(words / 3.3);
-      setReadingTime(`${calcSec}s read`);
-      setReadability(words > 25 ? "Clear & Engaging" : "Simple");
-      
-      // Sync only if AI optimization is not currently applying bespoke copy
-      if (!isAiApplied) {
-        setAiBody(text);
-        setAiHeadline(headline);
-      }
-    }
-  }, [text, headline, isStreaming, isAiApplied]);
 
-
-  // Dedicated Grammar Fix API calling `/api/ai/grammar`
-  const handleGrammarFixAPI = async () => {
+  // Dedicated Humanize text flow calling `/api/ai/humanize` or local mock fallback
+  const handleHumanizeText = async () => {
     if (!text.trim()) return;
+    
+    // Save current draft text to restore later if needed
+    setOriginalDraftText(text);
+    
     setIsOptimizing(true);
     setErrorMsg(null);
     setStreamingText("");
     setIsStreaming(true);
-    setAiMode('grammar');
+    setAiMode('humanize');
+    setIsReviewingHumanize(true);
 
     try {
-      const result = await fixGrammar(text, (chunk) => {
+      const result = await humanizeText(text, (chunk) => {
         setStreamingText(chunk);
       });
       
@@ -161,18 +154,66 @@ export default function Workspace() {
       setAiBody(result);
       setAiHeadline(headline);
       setIsAiApplied(true); // decouple card preview from input editor
+      triggerToast("Humanize Stream Complete", "REVIEW ACTIVE DRAFT OPTIONS BELOW");
 
     } catch (e) {
       console.error(e);
-      setErrorMsg("Failed to connect to the grammar correction engine.");
+      setErrorMsg("Failed to connect to the humanizer AI engine.");
+      setIsReviewingHumanize(false);
+      setAiMode(null);
     } finally {
       setIsOptimizing(false);
       setIsStreaming(false);
-      setAiMode(null);
     }
   };
 
+  const handleKeepHumanized = () => {
+    setText(aiBody); // Commit humanized draft to Writing Studio
+    setIsAiApplied(false); // recross-link preview and editor
+    setIsReviewingHumanize(false); // Hide the review actions
+    setOriginalDraftText("");
+    setAiMode(null);
+    triggerToast("Humanized Text Kept!", "WRITING STUDIO INPUT UPDATED SUCCESSFULLY");
+  };
 
+  const handleRegenerateHumanized = async () => {
+    const textToHumanize = originalDraftText || text;
+    if (!textToHumanize.trim()) return;
+    
+    setIsOptimizing(true);
+    setErrorMsg(null);
+    setStreamingText("");
+    setIsStreaming(true);
+    setAiMode('humanize');
+    
+    try {
+      const result = await humanizeText(textToHumanize, (chunk) => {
+        setStreamingText(chunk);
+      });
+      
+      setAiBody(result);
+      setIsAiApplied(true);
+      triggerToast("Fresh Draft Rendered", "NEW AI HUMANIZE DRAFT GENERATED");
+    } catch (e) {
+      console.error(e);
+      setErrorMsg("Failed to regenerate humanized text.");
+    } finally {
+      setIsOptimizing(false);
+      setIsStreaming(false);
+    }
+  };
+
+  const handleKeepOriginal = () => {
+    if (originalDraftText) {
+      setText(originalDraftText);
+      setAiBody(originalDraftText);
+    }
+    setIsAiApplied(false);
+    setIsReviewingHumanize(false);
+    setOriginalDraftText("");
+    setAiMode(null);
+    triggerToast("Restored Original Draft", "PREVIEW SYNCED TO INITIAL WRITING");
+  };
 
   const handleReset = () => {
     setText(DEFAULT_TEXT);
@@ -187,7 +228,8 @@ export default function Workspace() {
     setCardFont('sans');
     setAlign('left');
     setFontSize('medium');
-    setGrammarFix(false);
+    setOriginalDraftText("");
+    setIsReviewingHumanize(false);
     setEngagement("+42%");
     setAiMode(null);
     setErrorMsg(null);
@@ -215,8 +257,7 @@ export default function Workspace() {
       link.href = dataUrl;
       link.click();
       
-      setExportSuccess(true);
-      setTimeout(() => setExportSuccess(false), 3000);
+      triggerToast("Post Design Exported!", "HIGH-RES PNG DOWNLOAD COMPLETE");
     } catch (error) {
       console.error("Export failed:", error);
     } finally {
@@ -253,23 +294,23 @@ export default function Workspace() {
   // Dynamic card padding that scales with text length — tight for short posts, roomier for essays
   const getCardPadding = () => {
     const len = (activeContent?.body || text).length;
-    if (len < 100) return 'p-5 md:p-6';
-    if (len < 250) return 'p-6 md:p-7';
-    return 'p-7 md:p-8';
+    if (len < 100) return 'p-4 sm:p-5 md:p-6';
+    if (len < 250) return 'p-5 sm:p-6 md:p-7';
+    return 'p-6 sm:p-7 md:p-8';
   };
 
   // Dynamic body gap that scales with content
   const getBodyMargin = () => {
     const len = (activeContent?.body || text).length;
-    if (len < 100) return 'my-3';
-    if (len < 250) return 'my-4';
-    return 'my-5';
+    if (len < 100) return 'my-2.5 sm:my-3.5';
+    if (len < 250) return 'my-3 sm:my-4';
+    return 'my-4 sm:my-5';
   };
 
   const getFontSizeClass = () => {
-    if (fontSize === 'small') return 'text-[11px] sm:text-xs md:text-sm leading-relaxed';
-    if (fontSize === 'large') return 'text-sm sm:text-base md:text-lg leading-relaxed';
-    return 'text-xs sm:text-sm md:text-base leading-relaxed';
+    if (fontSize === 'small') return 'text-[13.5px] leading-relaxed';
+    if (fontSize === 'large') return 'text-[17.5px] leading-relaxed';
+    return 'text-[15.5px] leading-relaxed';
   };
 
   // Extract initials from custom username handles
@@ -287,9 +328,12 @@ export default function Workspace() {
 
   // Handle streaming text updates dynamically depending on the active AI mode
   const getStreamingState = () => {
-    if (!isStreaming) return { headline: aiHeadline, body: aiBody };
+    if (!isStreaming) {
+      if (isAiApplied) return { headline: aiHeadline, body: aiBody };
+      return { headline, body: text };
+    }
     
-    if (aiMode === 'grammar') {
+    if (aiMode === 'humanize') {
       return { headline: headline, body: streamingText };
     }
     
@@ -302,25 +346,58 @@ export default function Workspace() {
 
   const activeContent = getStreamingState();
 
+  // Dynamic, optimized inline selectors (completely synchronous, eliminating state dependencies and extra renders)
+  const readingTime = React.useMemo(() => {
+    const bodyContent = activeContent.body || "";
+    const words = bodyContent.trim().split(/\s+/).filter(Boolean).length;
+    const calcSec = Math.ceil(words / 3.3);
+    return `${calcSec}s read`;
+  }, [activeContent.body]);
+
+  const readability = React.useMemo(() => {
+    const bodyContent = activeContent.body || "";
+    const words = bodyContent.trim().split(/\s+/).filter(Boolean).length;
+    if (words < 15) return 'Simple';
+    if (words < 35) return 'Standard';
+    return 'Clear & Engaging';
+  }, [activeContent.body]);
+
+  const engagement = React.useMemo(() => {
+    const bodyContent = activeContent.body || "";
+    const words = bodyContent.trim().split(/\s+/).filter(Boolean).length;
+    if (words === 0) return '+0%';
+    const boost = 42 + Math.min(words, 40); // dynamic, engaging attention boost factor
+    return `+${boost}%`;
+  }, [activeContent.body]);
+
   return (
     <div className="w-full flex flex-col gap-6">
       
       {/* Immersive Glass Workspace Panel */}
       <div className="w-full bg-[#08080B]/90 border border-white/10 rounded-2xl flex flex-col overflow-hidden backdrop-blur-xl shadow-2xl">
-        
-        {/* Unified Premium Toolbar (Highly Visible Customizers) */}
-        <div className="w-full border-b border-white/10 p-5 bg-[#0B0B0E]/60 flex flex-wrap gap-4 items-center justify-between font-sans text-xs">
+               {/* Unified Premium Toolbar (Highly Visible Customizers) */}
+        <div 
+          role="toolbar" 
+          aria-label="Card Design Customization Toolbar" 
+          className="w-full border-b border-white/10 bg-[#0B0B0E]/60 p-3.5 sm:p-4 lg:p-0 flex flex-col lg:flex-row lg:items-center lg:justify-between select-none gap-3.5 lg:gap-0 lg:h-16 relative"
+        >
           
-          {/* Action Modifiers Group */}
-          <div className="flex flex-wrap items-center gap-3 grow w-full lg:w-auto">
+          {/* Left Styling Actions Group */}
+          <div className="flex flex-col sm:flex-row lg:flex-row items-stretch sm:items-center lg:items-center gap-3 lg:gap-2 xl:gap-3.5 w-full lg:w-auto lg:h-full lg:pl-3.5 xl:pl-4">
             
             {/* Highly Visible Aspect Ratio Selector (Unified in Toolbar) */}
-            <div className="flex items-center gap-1.5 bg-[#0C0C10] border border-white/15 rounded-lg p-1 h-10 grow sm:grow-0 justify-center">
+            <div 
+              role="group" 
+              aria-label="Canvas Aspect Ratio" 
+              className="flex items-center gap-1.5 bg-[#0C0C10] border border-white/15 rounded-lg p-1 h-10 w-full sm:w-auto flex-shrink-0 justify-center"
+            >
               {['16:9', '4:3', '1:1'].map((ratio) => (
                 <button
                   key={ratio}
                   onClick={() => setAspect(ratio)}
-                  className={`h-7 flex items-center justify-center px-3.5 rounded-md font-mono text-[10px] font-extrabold transition-all duration-200 grow sm:grow-0 ${
+                  aria-label={`Set aspect ratio to ${ratio}`}
+                  aria-pressed={aspect === ratio}
+                  className={`interactive-scale h-7 flex-grow sm:flex-grow-0 flex items-center justify-center px-3 sm:px-3.5 lg:px-2.5 xl:px-3.5 rounded-md font-mono text-[10px] font-extrabold transition-all duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-obsidian-accent/70 ${
                     aspect === ratio 
                       ? 'bg-white text-obsidian-bg font-extrabold shadow-lg' 
                       : 'text-obsidian-muted hover:text-white'
@@ -331,11 +408,14 @@ export default function Workspace() {
               ))}
             </div>
 
-            {/* Premium Custom Font Dropdown (Unified in Toolbar - Mobile Fluid) */}
-            <div className="relative w-full sm:w-[150px] grow sm:grow-0" ref={fontDropdownRef}>
+            {/* Custom Dropdown for Widescreen Desktops & Mobile Viewports (Unified Premium Selector) */}
+            <div className="relative w-full sm:w-[130px] xl:w-[150px] flex-shrink-0" ref={fontDropdownRef}>
               <button
                 onClick={() => setFontDropdownOpen(!fontDropdownOpen)}
-                className="w-full h-10 flex items-center justify-between px-3.5 bg-[#0C0C10] border border-white/15 rounded-lg text-white hover:border-[#E2C29B]/30 hover:bg-[#13131A] transition-all text-[10px] font-extrabold shadow-sm"
+                aria-label={`Select Typography Font, currently ${FONTS[cardFont].name}`}
+                aria-haspopup="listbox"
+                aria-expanded={fontDropdownOpen}
+                className="w-full h-10 flex items-center justify-between px-3 bg-[#0C0C10] border border-white/15 rounded-lg text-white hover:border-[#E2C29B]/30 hover:bg-[#13131A] transition-all text-[10px] font-extrabold shadow-sm cursor-pointer focus-visible:ring-2 focus-visible:ring-obsidian-accent/70"
               >
                 <span className="truncate text-obsidian-accent">{FONTS[cardFont].name}</span>
                 <ChevronDownIcon className="w-3.5 h-3.5 text-obsidian-muted transition-transform duration-200" style={{ transform: fontDropdownOpen ? 'rotate(180deg)' : 'none' }} />
@@ -348,7 +428,9 @@ export default function Workspace() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 8 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute top-full mt-1.5 left-0 w-full sm:w-[190px] bg-[#0C0C10] border border-white/15 rounded-xl shadow-2xl p-1 z-50 flex flex-col gap-0.5"
+                    role="listbox"
+                    aria-label="Typography Font Choices"
+                    className="absolute top-full mt-1.5 left-0 w-[170px] xl:w-[190px] bg-[#0C0C10] border border-white/15 rounded-xl shadow-2xl p-1 z-50 flex flex-col gap-0.5"
                   >
                     {Object.keys(FONTS).map((fontKey) => (
                       <button
@@ -357,7 +439,9 @@ export default function Workspace() {
                           setCardFont(fontKey);
                           setFontDropdownOpen(false);
                         }}
-                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-[10px] transition-all ${
+                        role="option"
+                        aria-selected={cardFont === fontKey}
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-[10px] transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-obsidian-accent/70 ${
                           cardFont === fontKey 
                             ? 'bg-obsidian-accentMuted text-[#E2C29B] font-extrabold' 
                             : 'text-obsidian-muted hover:text-white hover:bg-white/5'
@@ -372,30 +456,47 @@ export default function Workspace() {
               </AnimatePresence>
             </div>
 
-            <span className="w-[1px] h-4 bg-white/10 hidden xl:inline-block mx-1"></span>
+            <span className="w-[1px] h-4 bg-white/10 hidden lg:inline-block mx-1 flex-shrink-0" aria-hidden="true"></span>
 
             {/* Alignment / Sizes */}
-            <div className="flex items-center gap-1.5 bg-[#0C0C10] border border-white/15 rounded-lg p-1 h-10 grow sm:grow-0 justify-center">
-              <button 
-                onClick={() => setAlign('left')}
-                className={`h-7 w-7 flex items-center justify-center rounded-md transition-all ${align === 'left' ? 'bg-white/15 text-white shadow-sm' : 'text-obsidian-muted hover:text-white'}`}
-              >
-                <AlignLeftIcon className="w-3.5 h-3.5" />
-              </button>
-              <button 
-                onClick={() => setAlign('center')}
-                className={`h-7 w-7 flex items-center justify-center rounded-md transition-all ${align === 'center' ? 'bg-white/15 text-white shadow-sm' : 'text-obsidian-muted hover:text-white'}`}
-              >
-                <AlignCenterIcon className="w-3.5 h-3.5" />
-              </button>
-              <span className="w-[1px] h-3 bg-white/10 mx-1"></span>
+            <div 
+              role="group" 
+              aria-label="Text Formatting and Layout Alignment" 
+              className="flex items-center justify-between sm:justify-start lg:justify-center gap-1.5 bg-[#0C0C10] border border-white/15 rounded-lg p-1 h-10 w-full sm:w-auto flex-shrink-0"
+            >
+              <div className="flex items-center gap-1.5">
+                <button 
+                  onClick={() => setAlign('left')}
+                  aria-label="Align text left"
+                  aria-pressed={align === 'left'}
+                  className={`interactive-scale h-7 w-7 flex items-center justify-center rounded-md transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-obsidian-accent/70 ${align === 'left' ? 'bg-white/15 text-white shadow-sm' : 'text-obsidian-muted hover:text-white'}`}
+                >
+                  <AlignLeftIcon className="w-3.5 h-3.5" />
+                </button>
+                <button 
+                  onClick={() => setAlign('center')}
+                  aria-label="Align text center"
+                  aria-pressed={align === 'center'}
+                  className={`interactive-scale h-7 w-7 flex items-center justify-center rounded-md transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-obsidian-accent/70 ${align === 'center' ? 'bg-white/15 text-white shadow-sm' : 'text-obsidian-muted hover:text-white'}`}
+                >
+                  <AlignCenterIcon className="w-3.5 h-3.5" />
+                </button>
+              </div>
               
-              <div className="flex items-center gap-0.5">
+              <span className="w-[1px] h-3 bg-white/10 mx-1" aria-hidden="true"></span>
+              
+              <div 
+                role="group" 
+                aria-label="Card Font Size Selector" 
+                className="flex items-center gap-0.5 flex-grow sm:flex-grow-0 justify-end sm:justify-start"
+              >
                 {['small', 'medium', 'large'].map((size) => (
                   <button
                     key={size}
                     onClick={() => setFontSize(size)}
-                    className={`h-7 px-3 flex items-center justify-center rounded text-[10px] uppercase font-extrabold tracking-wider transition-all ${
+                    aria-label={`Set font size to ${size}`}
+                    aria-pressed={fontSize === size}
+                    className={`interactive-scale h-7 flex-grow sm:flex-grow-0 px-3 lg:px-2.5 xl:px-3.5 flex items-center justify-center rounded text-[10px] uppercase font-extrabold tracking-wider transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-obsidian-accent/70 ${
                       fontSize === size ? 'bg-white/15 text-white shadow-sm' : 'text-obsidian-muted hover:text-white'
                     }`}
                   >
@@ -405,43 +506,98 @@ export default function Workspace() {
               </div>
             </div>
 
-            {/* Grammar Polisher */}
-            <button
-              onClick={handleGrammarFixAPI}
-              disabled={isOptimizing}
-              className={`h-10 px-4 rounded-lg border flex items-center justify-center gap-2 font-bold transition-all grow sm:grow-0 ${
-                aiMode === 'grammar' 
-                  ? 'bg-obsidian-aiMuted border-obsidian-ai/40 text-white shadow-lg shadow-obsidian-aiGlow' 
-                  : 'bg-[#0C0C10] border-white/15 text-obsidian-muted hover:text-white hover:border-[#6366F1]/30'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              <WandIcon className={`w-3.5 h-3.5 ${aiMode === 'grammar' ? 'text-obsidian-ai text-glow-ai' : ''}`} />
-              <span>{aiMode === 'grammar' ? 'Correcting...' : 'Fix Grammar'}</span>
-              <span className={`w-1.5 h-1.5 rounded-full ${aiMode === 'grammar' ? 'bg-obsidian-success' : 'bg-white/20'}`}></span>
-            </button>
-
           </div>
 
-          {/* Export Button Group */}
-          <div className="flex flex-wrap items-center gap-3 grow w-full lg:w-auto justify-end mt-2 lg:mt-0">
+          {/* Right Actions Group (AI Controls & Export Card) */}
+          <div className="flex flex-col sm:flex-row lg:flex-row items-stretch sm:items-center lg:items-center gap-3 lg:gap-2 xl:gap-3 w-full lg:w-auto lg:h-full lg:ml-auto lg:pr-3.5 xl:pr-4">
+            
+            {!isReviewingHumanize ? (
+              /* Standard Flow: Humanize and Export Card side-by-side on mobile, horizontal row on desktop */
+              <div className="grid grid-cols-2 gap-2.5 w-full sm:flex sm:flex-row sm:items-center sm:w-auto">
+                <button
+                  onClick={handleHumanizeText}
+                  disabled={isOptimizing}
+                  aria-label="Humanize raw text using LLM"
+                  className="interactive-scale h-10 px-4 lg:px-3.5 xl:px-4 rounded-lg border bg-[#0C0C10] border-white/15 text-obsidian-muted hover:text-white hover:border-[#E2C29B]/30 flex items-center justify-center gap-2 font-extrabold text-[10px] uppercase tracking-wider transition-all w-full sm:w-auto flex-shrink-0 cursor-pointer focus-visible:ring-2 focus-visible:ring-obsidian-accent/70 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span>{isOptimizing ? 'Humanizing...' : 'Humanize'}</span>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isOptimizing ? 'bg-[#E2C29B] animate-ping' : 'bg-white/20'}`} aria-hidden="true"></span>
+                </button>
 
-            <button
-              onClick={handleExportPNG}
-              disabled={isExporting}
-              className="interactive-scale h-10 px-4.5 bg-gradient-to-r from-[#E2C29B] to-[#C49B74] hover:brightness-110 text-obsidian-bg font-extrabold rounded-lg shadow-lg shadow-obsidian-accentMuted flex items-center justify-center gap-2 grow sm:grow-0"
-            >
-              <DownloadIcon className="w-3.5 h-3.5" />
-              <span>{isExporting ? 'Exporting...' : 'Export Card'}</span>
-            </button>
+                <button
+                  onClick={handleExportPNG}
+                  disabled={isExporting}
+                  aria-label="Export Custom Social Card Image as PNG"
+                  className="interactive-scale h-10 px-4.5 lg:px-3.5 xl:px-4.5 bg-gradient-to-r from-[#E2C29B] to-[#C49B74] hover:brightness-110 text-[#0D0D11] font-sans font-extrabold text-[10px] uppercase tracking-wider rounded-lg shadow-lg shadow-[#E2C29B]/5 flex items-center justify-center gap-2 w-full sm:w-auto flex-shrink-0 cursor-pointer transition-all duration-200 focus-visible:ring-2 focus-visible:ring-obsidian-accent/70"
+                >
+                  <DownloadIcon className="w-3.5 h-3.5" />
+                  <span>{isExporting ? 'Exporting...' : 'Export Card'}</span>
+                </button>
+              </div>
+            ) : (
+              /* Review Active Flow: Review actions and Export Card stacked on mobile, row on desktop */
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 lg:gap-2.5 w-full sm:w-auto">
+                {/* Tactile Review Action Buttons */}
+                <div 
+                  role="group" 
+                  aria-label="Review AI Draft Actions" 
+                  className="flex items-center gap-1 bg-[#0C0C10] border border-[#E2C29B]/35 rounded-lg p-1 h-10 w-full sm:w-auto justify-between sm:justify-center flex-shrink-0 shadow-md shadow-[#E2C29B]/5 transition-all duration-300"
+                >
+                  <button
+                    onClick={handleKeepOriginal}
+                    disabled={isStreaming || isOptimizing}
+                    title="Discard humanized draft and revert to original text"
+                    aria-label="Discard draft and keep original"
+                    className="interactive-scale h-7 flex-grow sm:flex-grow-0 px-3 lg:px-2 xl:px-3 flex items-center justify-center rounded-md font-sans font-bold text-[10px] uppercase tracking-wider transition-all gap-1 cursor-pointer focus-visible:ring-2 focus-visible:ring-obsidian-accent/70 text-white/70 hover:text-white bg-white/5 hover:bg-white/10 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <RotateCcwIcon className="w-2.5 h-2.5" />
+                    <span>Original</span>
+                  </button>
+
+                  <button
+                    onClick={handleRegenerateHumanized}
+                    disabled={isStreaming || isOptimizing}
+                    title="Generate another humanized draft variation"
+                    aria-label="Regenerate another humanized draft"
+                    className="interactive-scale h-7 flex-grow sm:flex-grow-0 px-3 lg:px-2 xl:px-3 flex items-center justify-center rounded-md font-sans font-bold text-[10px] uppercase tracking-wider transition-all gap-1 cursor-pointer focus-visible:ring-2 focus-visible:ring-obsidian-accent/70 text-[#E2C29B] border border-[#E2C29B]/25 hover:border-[#E2C29B]/50 hover:bg-[#E2C29B]/5 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <WandIcon className={`w-2.5 h-2.5 ${isStreaming ? 'animate-spin' : ''}`} />
+                    <span>Regen</span>
+                  </button>
+
+                  <button
+                    onClick={handleKeepHumanized}
+                    disabled={isStreaming || isOptimizing}
+                    title="Apply humanized draft back to Writing Studio input editor"
+                    aria-label="Keep humanized text and update editor input"
+                    className="interactive-scale h-7 flex-grow sm:flex-grow-0 px-3.5 lg:px-2.5 xl:px-3.5 flex items-center justify-center rounded-md font-sans font-extrabold text-[10px] uppercase tracking-wider transition-all gap-1 cursor-pointer focus-visible:ring-2 focus-visible:ring-obsidian-accent/70 bg-gradient-to-r from-[#E2C29B] to-[#C49B74] hover:brightness-110 text-[#0D0D11] active:scale-95 shadow-md shadow-black/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <CheckCircleIcon className="w-2.5 h-2.5" />
+                    <span>Keep</span>
+                  </button>
+                </div>
+
+                {/* Export Card button */}
+                <button
+                  onClick={handleExportPNG}
+                  disabled={isExporting}
+                  aria-label="Export Custom Social Card Image as PNG"
+                  className="interactive-scale h-10 px-4.5 bg-gradient-to-r from-[#E2C29B] to-[#C49B74] hover:brightness-110 text-[#0D0D11] font-sans font-extrabold text-[10px] uppercase tracking-wider rounded-lg shadow-lg shadow-[#E2C29B]/5 flex items-center justify-center gap-2 w-full sm:w-auto flex-shrink-0 cursor-pointer transition-all duration-200 focus-visible:ring-2 focus-visible:ring-obsidian-accent/70"
+                >
+                  <DownloadIcon className="w-3.5 h-3.5" />
+                  <span>{isExporting ? 'Exporting...' : 'Export Card'}</span>
+                </button>
+              </div>
+            )}
+
           </div>
 
         </div>
 
         {/* Centerpiece Content Workspace Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
-          
-          {/* Left Panel: Markdown Writer (Inputs area) */}
-          <div className={`${gridCols.left} border-b lg:border-b-0 lg:border-r border-white/10 flex flex-col p-6 bg-[#060608]/50 gap-5 transition-all duration-500 ease-in-out`}>
+                   {/* Left Panel: Markdown Writer (Inputs area) */}
+          <div className={`${gridCols.left} border-b lg:border-b-0 lg:border-r border-white/10 flex flex-col p-4 sm:p-6 bg-[#060608]/50 gap-5 order-last lg:order-none transition-all duration-500 ease-in-out`}>
             
             <div className="flex justify-between items-center pb-2 border-b border-white/10">
               <span className="font-mono text-[9px] text-obsidian-muted uppercase tracking-widest font-bold">
@@ -449,7 +605,8 @@ export default function Workspace() {
               </span>
               <button 
                 onClick={handleReset}
-                className="interactive-scale flex items-center gap-1.5 text-obsidian-muted hover:text-white transition-colors"
+                aria-label="Reset Writing Studio fields to default"
+                className="interactive-scale flex items-center gap-1.5 text-obsidian-muted hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-obsidian-accent/70 rounded px-1.5 py-0.5 cursor-pointer"
               >
                 <RotateCcwIcon className="w-3 h-3" />
                 <span className="font-mono text-[8px] uppercase tracking-wider">Reset</span>
@@ -460,54 +617,57 @@ export default function Workspace() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Handle */}
               <div className="flex flex-col gap-1.5">
-                <label className="font-mono text-[9px] text-[#C4C4D6] uppercase tracking-widest font-extrabold">
-                  Handle / Username
+                <label htmlFor="writer-handle" className="font-mono text-[9px] text-[#C4C4D6] uppercase tracking-widest font-extrabold">
+                  Handle
                 </label>
                 <input
+                  id="writer-handle"
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="@creator"
-                  aria-label="X Creator Handle"
-                  className="w-full bg-[#09090C]/60 border border-white/15 focus:border-[#E2C29B]/70 focus:ring-2 focus:ring-[#E2C29B]/15 rounded-xl px-4 py-2.5 font-mono text-[13.5px] text-white focus:outline-none placeholder:text-white/20 transition-all duration-300"
+                  aria-label="Creator Handle"
+                  className="w-full bg-[#09090C]/60 border border-white/15 focus-visible:border-[#E2C29B]/70 focus-visible:ring-2 focus-visible:ring-[#E2C29B]/20 rounded-xl px-4 py-2.5 font-mono text-base lg:text-[14px] text-white focus:outline-none placeholder:text-white/20 transition-all duration-300"
                 />
               </div>
 
               {/* Headline */}
               <div className="flex flex-col gap-1.5">
-                <label className="font-mono text-[9px] text-[#C4C4D6] uppercase tracking-widest font-extrabold">
-                  Card Headline <span className="text-[8px] text-white/40 lowercase">(optional)</span>
+                <label htmlFor="writer-headline" className="font-mono text-[9px] text-[#C4C4D6] uppercase tracking-widest font-extrabold">
+                  Headline <span className="text-[8px] text-white/40 lowercase">(optional)</span>
                 </label>
                 <input
+                  id="writer-headline"
                   type="text"
                   value={headline}
                   onChange={(e) => setHeadline(e.target.value)}
                   placeholder="Enter card title..."
-                  aria-label="Optional Card Headline"
-                  className="w-full bg-[#09090C]/60 border border-white/15 focus:border-[#E2C29B]/70 focus:ring-2 focus:ring-[#E2C29B]/15 rounded-xl px-4 py-2.5 font-mono text-[13.5px] text-white focus:outline-none placeholder:text-white/20 transition-all duration-300"
+                  aria-label="Card Headline Input (Optional)"
+                  className="w-full bg-[#09090C]/60 border border-white/15 focus-visible:border-[#E2C29B]/70 focus-visible:ring-2 focus-visible:ring-[#E2C29B]/20 rounded-xl px-4 py-2.5 font-mono text-base lg:text-[14px] text-white focus:outline-none placeholder:text-white/20 transition-all duration-300"
                 />
               </div>
             </div>
 
             {/* Main Textarea */}
             <div className="flex flex-col flex-grow gap-2">
-              <label className="font-mono text-[9px] text-[#C4C4D6] uppercase tracking-widest font-extrabold">
-                Core Thoughts / Body
+              <label htmlFor="writer-body" className="font-mono text-[9px] text-[#C4C4D6] uppercase tracking-widest font-extrabold">
+                Body
               </label>
               <div className="relative flex-grow flex flex-col">
                 <textarea
+                  id="writer-body"
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   disabled={isOptimizing}
                   placeholder="Write your long thoughts here..."
-                  aria-label="Core Card Thoughts"
-                  className="w-full flex-grow bg-[#09090C]/40 border border-white/15 focus:border-[#E2C29B]/60 focus:ring-2 focus:ring-[#E2C29B]/15 rounded-xl p-4 font-mono text-[13.5px] leading-relaxed text-white/90 focus:outline-none resize-none min-h-[220px] transition-all duration-300"
+                  aria-label="Social Card Body Content Input"
+                  className="w-full flex-grow bg-[#09090C]/40 border border-white/15 focus-visible:border-[#E2C29B]/60 focus-visible:ring-2 focus-visible:ring-[#E2C29B]/20 rounded-xl p-4 font-mono text-base lg:text-[14px] leading-relaxed text-white/90 focus:outline-none resize-none min-h-[180px] lg:min-h-[280px] transition-all duration-300"
                 />
                 
                 {/* Character counting bar */}
                 <div className="flex justify-between items-center pt-2.5 mt-1 text-[9px] font-mono text-obsidian-muted border-t border-white/10">
                   <span className="flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full ${isOverflowing ? 'bg-obsidian-accent' : 'bg-white/20'}`}></span>
+                    <span className={`w-1.5 h-1.5 rounded-full ${isOverflowing ? 'bg-obsidian-accent' : 'bg-white/20'}`} aria-hidden="true"></span>
                     {isOverflowing ? 'OVER 280 CHARACTER LIMIT' : 'STANDARD SINGLE POST'}
                   </span>
                   <div className="flex items-center gap-1.5">
@@ -533,12 +693,10 @@ export default function Workspace() {
               </div>
             )}
 
-
-
           </div>
 
           {/* Right Panel: Immersive Live Preview Card Canvas */}
-          <div className={`${gridCols.right} p-5 flex flex-col items-center bg-[#040406]/35 relative gap-4 transition-all duration-500 ease-in-out`}>
+          <div className={`${gridCols.right} p-4 sm:p-5 flex flex-col items-center justify-center bg-[#040406]/35 relative gap-4 order-first lg:order-none transition-all duration-500 ease-in-out`}>
             
             {/* Soft backdrop glow to give three-dimensional float depth */}
             <div className="absolute inset-0 bg-gradient-to-tr from-obsidian-aiGlow to-obsidian-accentMuted/5 blur-3xl rounded-full opacity-40 pointer-events-none" />
@@ -546,13 +704,7 @@ export default function Workspace() {
             {/* A dynamic width-locked container that keeps the theme selector, canvas card, and stats panel perfectly aligned to the exact same width */}
             <div className={`w-full flex flex-col gap-4 mx-auto transition-all duration-500 ease-in-out ${getAspectWidthClass()}`}>
 
-              {/* Right Panel Header (Matching WRITING STUDIO on the left for symmetric elegance) */}
-              <div className="flex justify-between items-center pb-2 border-b border-white/10 w-full">
-                <span className="font-mono text-[9px] text-obsidian-muted uppercase tracking-widest font-bold">
-                  LIVE RETINA PREVIEW
-                </span>
-                
-              </div>
+              
 
               {/* Theme Preset Selector Button Row (Symmetric to Left Inputs Row) */}
               <div className="w-full flex flex-col gap-1.5 shrink-0">
@@ -560,19 +712,38 @@ export default function Workspace() {
                   <PaletteIcon className="w-3.5 h-3.5" /> Preset Theme
                 </span>
                 <div className="flex flex-wrap gap-1.5 w-full">
-                  {Object.keys(PRESETS).map((key) => (
-                    <button
-                      key={key}
-                      onClick={() => setTheme(key)}
-                      className={`flex-grow flex-shrink basis-[calc(50%-4px)] sm:basis-0 px-3 py-2.5 rounded-lg border text-center font-extrabold transition-all duration-200 text-[10px] ${
-                        theme === key 
-                          ? 'bg-obsidian-accentMuted border-obsidian-accent text-white shadow-md' 
-                          : 'bg-[#0C0C10] border-white/15 text-[#C4C4D6] hover:border-[#E2C29B]/35 hover:text-white'
-                      }`}
-                    >
-                      {PRESETS[key].name.split(' ')[0]}
-                    </button>
-                  ))}
+                  {Object.keys(PRESETS).map((key) => {
+                    // Aesthetic color dots for previewing the theme at a single glance
+                    const dots = {
+                      ethereal: ['#F1F5F9', '#CBD5E1', '#0F172A'],
+                      obsidian: ['#0D0D11', '#E2C29B', '#FFFFFF'],
+                      parchment: ['#F3EAD3', '#D1C2A5', '#3E2511'],
+                      clay: ['#E2725B', '#FFFDD0', '#FFFDD0']
+                    }[key] || ['#FFFFFF'];
+
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => setTheme(key)}
+                        className={`interactive-scale flex-grow flex-shrink basis-[calc(50%-4px)] sm:basis-0 px-3 py-2 sm:py-2.5 rounded-lg border text-center font-extrabold transition-all duration-200 text-[10px] flex flex-col items-center justify-center gap-1.5 cursor-pointer ${
+                          theme === key 
+                            ? 'bg-obsidian-accentMuted border-[#E2C29B] text-white shadow-md' 
+                            : 'bg-[#0C0C10] border-white/10 text-[#C4C4D6] hover:border-white/20 hover:text-white'
+                        }`}
+                      >
+                        <span>{PRESETS[key].name.split(' ')[0]}</span>
+                        <div className="flex gap-1 items-center" aria-hidden="true">
+                          {dots.map((color, idx) => (
+                            <span 
+                              key={idx} 
+                              className="w-1.5 h-1.5 rounded-full border border-white/10" 
+                              style={{ backgroundColor: color }}
+                            />
+                          ))}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -581,10 +752,14 @@ export default function Workspace() {
                 <div 
                   ref={canvasRef}
                   className={`w-full transition-all duration-500 ease-in-out flex flex-col justify-between ${getCardPadding()} rounded-2xl border ${currentTheme.cardBg} ${activeFontFamily} ${currentTheme.border} ${getAspectClass()} ${
-                    isStreaming 
-                      ? 'border-[#6366F1]/50 shadow-[0_0_30px_rgba(99,102,241,0.2)] animate-pulse-slow' 
-                      : 'shadow-2xl'
-                  }`}
+                    isStreaming
+                      ? aiMode === 'humanize'
+                        ? 'border-[#E2C29B]/60 shadow-[0_0_40px_rgba(226,194,155,0.25)]'
+                        : 'border-[#6366F1]/50 shadow-[0_0_30px_rgba(99,102,241,0.2)] animate-pulse-slow'
+                      : isReviewingHumanize
+                        ? 'border-[#E2C29B]/40 shadow-[0_0_25px_rgba(226,194,155,0.15)]'
+                        : 'shadow-2xl'
+                  } ${isStreaming && aiMode === 'humanize' ? 'animate-[pulse_1.8s_infinite]' : ''}`}
                 >
                   {/* Card Header (Pure Simple Profile Brand) */}
                   <div className="flex justify-between items-center">
@@ -607,7 +782,7 @@ export default function Workspace() {
                   <div className={`flex-grow flex flex-col justify-center ${getBodyMargin()} ${align === 'center' ? 'text-center' : 'text-left'}`}>
                     <div className="flex flex-col gap-3">
                       {activeContent.headline && (
-                        <h3 className={`font-bold text-base md:text-lg leading-snug tracking-tight ${currentTheme.titleColor} ${isStreaming && aiMode !== 'grammar' ? 'animate-pulse' : ''}`}>
+                        <h3 className={`font-bold text-[18.5px] leading-snug tracking-tight ${currentTheme.titleColor} ${isStreaming && aiMode !== 'humanize' ? 'animate-pulse' : ''}`}>
                           {activeContent.headline}
                         </h3>
                       )}
@@ -624,13 +799,25 @@ export default function Workspace() {
                 </div>
               </div>
 
+
+
               {/* Understated Analytics stats panel inside right layout */}
-              <div className="w-full flex justify-between items-center px-4 font-mono text-[9px] text-[#C4C4D6] bg-[#08080A]/60 border border-white/10 rounded-xl py-2.5 shadow-sm">
-                <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-obsidian-accent"></span>Reading time: <strong className="text-white font-bold">{readingTime}</strong></span>
-                <span className="text-white/15">|</span>
-                <span className="flex items-center gap-1">Readability: <strong className="text-white font-bold">{readability}</strong></span>
-                <span className="text-white/15">|</span>
-                <span>Attention: <strong className="text-obsidian-accent text-glow font-bold">{engagement}</strong></span>
+              <div className="w-full flex justify-between items-center px-3 sm:px-4 font-mono text-[9px] text-[#C4C4D6] bg-[#08080A]/60 border border-white/10 rounded-xl py-2.5 shadow-sm gap-2">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-obsidian-accent shrink-0"></span>
+                  <span className="hidden sm:inline">Reading time:</span> 
+                  <strong className="text-white font-bold">{readingTime}</strong>
+                </span>
+                <span className="text-white/15 font-light">|</span>
+                <span className="flex items-center gap-1.5">
+                  <span className="hidden sm:inline">Readability:</span> 
+                  <strong className="text-white font-bold">{readability}</strong>
+                </span>
+                <span className="text-white/15 font-light">|</span>
+                <span className="flex items-center gap-1.5">
+                  <span className="hidden sm:inline">Attention:</span> 
+                  <strong className="text-obsidian-accent text-glow font-bold">{engagement}</strong>
+                </span>
               </div>
 
             </div>
@@ -641,21 +828,21 @@ export default function Workspace() {
 
       </div>
 
-      {/* Export success toast */}
+      {/* Dynamic Notification Toast */}
       <AnimatePresence>
-        {exportSuccess && (
+        {toastConfig.show && (
           <motion.div
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-[#0B0B0E] border border-[#E2C29B]/30 rounded-xl p-4 shadow-2xl backdrop-blur-xl"
+            className="fixed bottom-6 right-6 z-50 flex items-center gap-4.5 bg-[#0D0D11]/90 border-l-4 border-l-[#E2C29B] border border-white/10 rounded-r-xl rounded-l-md px-5 py-4 shadow-[0_10px_35px_rgba(0,0,0,0.8),0_0_15px_rgba(226,194,155,0.05)] backdrop-blur-2xl max-w-sm"
           >
-            <div className="w-8 h-8 rounded-full bg-obsidian-accent/15 border border-[#E2C29B]/30 flex items-center justify-center text-[#E2C29B]">
-              <CheckCircleIcon className="w-4 h-4" />
+            <div className="w-9 h-9 rounded-full bg-[#E2C29B]/10 border border-[#E2C29B]/25 flex items-center justify-center text-[#E2C29B] shadow-[inset_0_0_8px_rgba(226,194,155,0.1)] shrink-0" aria-hidden="true">
+              <CheckCircleIcon className="w-4.5 h-4.5 animate-[pulse_2s_infinite]" />
             </div>
-            <div>
-              <div className="text-white text-sm font-semibold">Post Design Exported!</div>
-              <div className="text-obsidian-muted text-[11px] font-mono mt-0.5">HIGH-RES PNG DOWNLOAD COMPLETE</div>
+            <div className="flex flex-col gap-0.5 select-none">
+              <div className="text-white font-sans text-xs md:text-sm font-extrabold tracking-tight">{toastConfig.title}</div>
+              <div className="text-[#E2C29B]/90 font-mono text-[9px] font-extrabold tracking-widest uppercase mt-0.5">{toastConfig.subtitle}</div>
             </div>
           </motion.div>
         )}

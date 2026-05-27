@@ -17,16 +17,34 @@
   --color-obsidian-success: #10B981;
 
   --font-sans: "Inter", sans-serif;
-  --font-heading: "Exo 2", "Syne", sans-serif;
-  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+  --font-heading: "Exo 2", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --font-outfit: "Outfit", sans-serif;
+  --font-serif: "Fraunces", serif;
+  --font-newsreader: "Newsreader", serif;
+  --font-playfair: "Playfair Display", serif;
+  --font-jakarta: "Plus Jakarta Sans", sans-serif;
+  --font-sora: "Sora", sans-serif;
 
   --animate-pulse-slow: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 @layer base {
   body {
-    @apply bg-obsidian-bg text-white font-sans antialiased overflow-x-hidden selection:bg-obsidian-accent/30 selection:text-white;
+    @apply bg-obsidian-bg text-white font-sans antialiased selection:bg-obsidian-accent/30 selection:text-white;
     background-color: #050505;
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+  /* Global responsive premium focus-visible rings */
+  input:focus-visible, 
+  textarea:focus-visible, 
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  a:focus-visible {
+    outline: none !important;
+    @apply ring-2 ring-obsidian-accent/70 ring-offset-2 ring-offset-obsidian-bg;
   }
 }
 
@@ -47,6 +65,15 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #3F3F54;
+}
+
+/* Utility to hide scrollbars completely while preserving scroll behavior */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }
 
 /* Custom utilities for premium aesthetics */

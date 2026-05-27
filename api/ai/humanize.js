@@ -1,9 +1,9 @@
 /**
- * /api/ai/grammar - Serverless Grammar correction endpoint
+ * /api/ai/humanize - Serverless Humanize text endpoint
  */
 
 import { validateRequest, streamGroq } from "./_groq.js";
-import { GRAMMAR_SYSTEM_PROMPT } from "./_prompts.js";
+import { HUMANIZE_SYSTEM_PROMPT } from "./_prompts.js";
 
 export default async function handler(req, res) {
   const validation = await validateRequest(req, res);
@@ -17,10 +17,10 @@ export default async function handler(req, res) {
   }
 
   const messages = [
-    { role: "system", content: GRAMMAR_SYSTEM_PROMPT },
+    { role: "system", content: HUMANIZE_SYSTEM_PROMPT },
     { role: "user", content: text }
   ];
 
-  // Set temperature to 0.1 for maximum precision and strict correction focus
-  await streamGroq(apiKey, messages, 0.1, res);
+  // Set temperature to 0.7 for high conversational variability and natural flow
+  await streamGroq(apiKey, messages, 0.7, res);
 }

@@ -74,16 +74,23 @@ export function parseStreamText(accumulatedText) {
 }
 
 /**
- * High-fidelity local frontend grammar polisher (spelling, capitalization, contractions, spacing)
+ * High-fidelity local frontend humanize polisher (removes AI buzzwords, creates dynamic flow and human rhythm)
  */
-async function localFrontendGrammar(rawText, onChunk = null) {
+async function localFrontendHumanize(rawText, onChunk = null) {
   // Simulate minor local processing latency
-  await new Promise((resolve) => setTimeout(resolve, 800));
+  await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  // Perform premium capitalization and double spacing corrections
-  let corrected = rawText
+  let humanized = rawText
     .trim()
     .replace(/\s+/g, ' ') // fix double spacing
+    .replace(/\b(delve into|delve)\b/gi, "go deep into")
+    .replace(/\b(elevate)\b/gi, "sharpen")
+    .replace(/\b(tapestry)\b/gi, "reality")
+    .replace(/\b(testament)\b/gi, "proof")
+    .replace(/\b(foster)\b/gi, "build")
+    .replace(/\b(synergy)\b/gi, "momentum")
+    .replace(/\b(moreover|furthermore)\b/gi, "also")
+    .replace(/\b(unleash)\b/gi, "unlock")
     .replace(/\bi\b/g, 'I') // capitalize isolated i
     .replace(/(^|[.!?]\s+)([a-z])/g, (match, p1, p2) => p1 + p2.toUpperCase()) // capitalize start of sentences
     .replace(/\b(dont|cant|wont|isnt|arent|wasnt|werent|shouldnt|wouldnt|couldnt)\b/gi, (match) => {
@@ -94,18 +101,23 @@ async function localFrontendGrammar(rawText, onChunk = null) {
       return contractions[match.toLowerCase()] || match;
     });
 
+  // Ensure it has some organic sentence pacing and flows nicely
+  if (humanized.length > 0 && !/[.!?]$/.test(humanized)) {
+    humanized += '.';
+  }
+
   // Stream simulation
   if (onChunk) {
     let currentText = "";
-    for (let i = 0; i < corrected.length; i += 3) {
-      currentText += corrected.substring(i, i + 3);
+    for (let i = 0; i < humanized.length; i += 3) {
+      currentText += humanized.substring(i, i + 3);
       onChunk(currentText);
       await new Promise((r) => setTimeout(r, 6));
     }
-    onChunk(corrected);
+    onChunk(humanized);
   }
 
-  return corrected;
+  return humanized;
 }
 
 /**
@@ -263,26 +275,26 @@ async function callStreamingEndpoint(endpointUrl, payload, onChunk) {
 }
 
 /**
- * Corrects grammar and punctuation using `/api/ai/grammar`
+ * Humanizes text using `/api/ai/humanize` serverless route or fallback mock
  */
-export async function fixGrammar(rawText, onChunk = null) {
+export async function humanizeText(rawText, onChunk = null) {
   if (!rawText.trim()) return "";
 
   if (FORCE_FRONTEND_AI) {
-    return localFrontendGrammar(rawText, onChunk);
+    return localFrontendHumanize(rawText, onChunk);
   }
 
   try {
-    let finalCorrectedText = "";
-    await callStreamingEndpoint("/api/ai/grammar", { text: rawText }, (streamedText) => {
-      finalCorrectedText = streamedText;
+    let finalHumanizedText = "";
+    await callStreamingEndpoint("/api/ai/humanize", { text: rawText }, (streamedText) => {
+      finalHumanizedText = streamedText;
       if (onChunk) onChunk(streamedText);
     });
 
-    return finalCorrectedText;
+    return finalHumanizedText;
   } catch (error) {
-    console.error("Grammar Fix API failure:", error);
-    return localFrontendGrammar(rawText, onChunk);
+    console.error("Humanize API failure:", error);
+    return localFrontendHumanize(rawText, onChunk);
   }
 }
 
